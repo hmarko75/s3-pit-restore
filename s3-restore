@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 if [ -z "$AWS_ACCESS_KEY_ID" ]
 then
       echo "\$AWS_ACCESS_KEY_ID is not set, please set bucket access key using: export AWS_ACCESS_KEY_ID=<access key>"
@@ -12,6 +14,6 @@ then
       exit 1
 fi
 
-docker run -ti --rm --name=s3-pit-restore -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY hmarko75/s3-pit-restore:latest "$@"
+docker run -ti --rm --name=s3-pit-restore -v $SCRIPT_DIR/restore:/restore -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY hmarko75/s3-pit-restore:latest "$@"
 exit $?
 

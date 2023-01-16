@@ -10,5 +10,7 @@ RUN pip3 --no-cache-dir install boto3 botocore awscli shutup
 #clone the repo 
 RUN git clone https://github.com/hmarko75/s3-pit-restore.git
 
+RUN mkdir -p /restore
+
 ENTRYPOINT [ "./s3-pit-restore/s3-pit-restore" ]
 CMD [ "-h" ]
