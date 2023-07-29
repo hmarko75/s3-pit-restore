@@ -39,11 +39,12 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
                      print(f"Skipping: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Retention: {retention_period}")
                      skipped.append(key)
                      continue
-
-            s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version_id)
-            print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False")
-
-
+            try:
+                s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+                print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False")
+            except Exception as err:
+                print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False Error: {err}")
+            
     for version in versions.get('DeleteMarkers', []):
         key = version['Key']
         version_id = version['VersionId']
@@ -56,7 +57,7 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
                  retention_period = retention['Retention']['RetainUntilDate']
             except:
                  retention_period = None
-
+            
             if retention_period:
                  days_until_retnetion = current_time - retention_period
                  if days_until_retnetion.days < 0:
@@ -65,9 +66,11 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
             
             if key in skipped:
                  continue
-
-            s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version['VersionId'])
-            print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True")
+            try:
+                s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version['VersionId'])
+                print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True")
+            except Exception as err:
+                print(f"Failed to delete: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True Error: {err}")
 
 
 def main():
@@ -82,7 +85,10 @@ def main():
     days_threshold = args.days
     endpoint = args.endpoint
 
-    delete_non_current_versions(endpoint=endpoint, bucket_name=bucket_name, days_threshold=days_threshold)
+    try:
+        delete_non_current_versions(endpoint=endpoint, bucket_name=bucket_name, days_threshold=days_threshold)
+    except Exception as err:
+        print(f"Error: {err}")    
 
 if __name__ == "__main__":
     main()
