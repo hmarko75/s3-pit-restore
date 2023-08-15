@@ -13,7 +13,7 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
     skipped = list()
 
     s3client = boto3.client('s3', endpoint_url=endpoint, verify=False)
-    paginator = s3_client.get_paginator('list_object_versions')
+    paginator = s3client.get_paginator('list_object_versions')
     list_params = {
        'Bucket': bucket_name
     }
