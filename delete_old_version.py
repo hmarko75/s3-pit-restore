@@ -18,37 +18,37 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
        'Bucket': bucket_name
     }
     for page in paginator.paginate(**list_params):
-       versions = s3client.list_object_versions(Bucket=bucket_name)
-       for version in page.get('Versions', []):
-           key = version['Key']
-           version_id = version['VersionId']
-           is_latest = version['IsLatest']
-           last_modified = version['LastModified'].replace(tzinfo=timezone.utc)
-   
-           # Skip the current version as we only want to delete non-current versions
-           if is_latest:
-               continue
-   
-           age = current_time - last_modified
-           if age > timedelta(days=days_threshold):
-               try:
-                    retention = s3client.get_object_retention(Bucket=bucket_name,Key=key,VersionId=version_id)
-                    retention_period = retention['Retention']['RetainUntilDate']
-               except:
-                    retention_period = None
-   
-               if retention_period:
-                    days_until_retnetion = current_time - retention_period
-                    if days_until_retnetion.days < 0:
-                        print(f"Skipping: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Retention: {retention_period}")
-                        skipped.append(key)
-                        continue
-               try:
-                   s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version_id)
-                   print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False")
-               except Exception as err:
-                   print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False Error: {err}")
-            
+        versions = s3client.list_object_versions(Bucket=bucket_name)
+        for version in page.get('Versions', []):
+            key = version['Key']
+            version_id = version['VersionId']
+            is_latest = version['IsLatest']
+            last_modified = version['LastModified'].replace(tzinfo=timezone.utc)
+
+            # Skip the current version as we only want to delete non-current versions
+            if is_latest:
+                continue
+
+            age = current_time - last_modified
+            if age > timedelta(days=days_threshold):
+                try:
+                        retention = s3client.get_object_retention(Bucket=bucket_name,Key=key,VersionId=version_id)
+                        retention_period = retention['Retention']['RetainUntilDate']
+                except:
+                        retention_period = None
+
+                if retention_period:
+                        days_until_retnetion = current_time - retention_period
+                        if days_until_retnetion.days < 0:
+                            print(f"Skipping: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Retention: {retention_period}")
+                            skipped.append(key)
+                            continue
+                try:
+                    s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+                    print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False")
+                except Exception as err:
+                    print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False Error: {err}")
+                
         for version in versions.get('DeleteMarkers', []):
             key = version['Key']
             version_id = version['VersionId']
