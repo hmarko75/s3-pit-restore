@@ -48,7 +48,8 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
                     print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False")
                 except Exception as err:
                     print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False Error: {err}")
-                
+    
+    for page in paginator.paginate(**list_params):  
         for version in versions.get('DeleteMarkers', []):
             key = version['Key']
             version_id = version['VersionId']
