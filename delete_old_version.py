@@ -49,32 +49,32 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
                except Exception as err:
                    print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False Error: {err}")
             
-    for version in versions.get('DeleteMarkers', []):
-        key = version['Key']
-        version_id = version['VersionId']
-        last_modified = version['LastModified'].replace(tzinfo=timezone.utc)
-        age = current_time - last_modified
-        
-        if age > timedelta(days=days_threshold):
-            try:
-                 retention = s3client.get_object_retention(Bucket=bucket_name,Key=key,VersionId=version_id)
-                 retention_period = retention['Retention']['RetainUntilDate']
-            except:
-                 retention_period = None
+        for version in versions.get('DeleteMarkers', []):
+            key = version['Key']
+            version_id = version['VersionId']
+            last_modified = version['LastModified'].replace(tzinfo=timezone.utc)
+            age = current_time - last_modified
             
-            if retention_period:
-                 days_until_retnetion = current_time - retention_period
-                 if days_until_retnetion.days < 0:
-                     print(f"Skipping: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Retention: {retention_period}")
-                     continue
-            
-            if key in skipped:
-                 continue
-            try:
-                s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version['VersionId'])
-                print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True")
-            except Exception as err:
-                print(f"Failed to delete: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True Error: {err}")
+            if age > timedelta(days=days_threshold):
+                try:
+                    retention = s3client.get_object_retention(Bucket=bucket_name,Key=key,VersionId=version_id)
+                    retention_period = retention['Retention']['RetainUntilDate']
+                except:
+                    retention_period = None
+                
+                if retention_period:
+                    days_until_retnetion = current_time - retention_period
+                    if days_until_retnetion.days < 0:
+                        print(f"Skipping: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Retention: {retention_period}")
+                        continue
+                
+                if key in skipped:
+                    continue
+                try:
+                    s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version['VersionId'])
+                    print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True")
+                except Exception as err:
+                    print(f"Failed to delete: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True Error: {err}")
 
 
 def main():
