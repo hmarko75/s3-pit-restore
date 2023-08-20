@@ -49,7 +49,9 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, prefix:str='', da
                 try:
                     if not simulate:
                         s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version_id)
-                    print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Size: {size} Modified Time: {last_modified} Delete Marker: False")
+                        print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Size: {size} Modified Time: {last_modified} Delete Marker: False")
+                    else:
+                        print(f"SIMULATE Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Size: {size} Modified Time: {last_modified} Delete Marker: False")
                 except Exception as err:
                     print(f"Could Not Delete: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False Error: {err}")
     
@@ -81,7 +83,10 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, prefix:str='', da
                 try:
                     if not simulate:
                         s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version['VersionId'])
-                    print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True")
+                        print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True")
+                    else:
+                        print(f"SIMULATE Deleted: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True")
+
                 except Exception as err:
                     print(f"Failed to delete: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True Error: {err}")
 
