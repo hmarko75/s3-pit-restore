@@ -7,7 +7,7 @@ import argparse
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:int=30):
+def delete_non_current_versions(endpoint:str, bucket_name:str, prefix:str='', days_threshold:int=30):
    
     current_time = datetime.now(timezone.utc)
     skipped = list()
@@ -28,6 +28,8 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
             # Skip the current version as we only want to delete non-current versions
             if is_latest:
                 continue
+            if not key.startswith(prefix):
+                continue
 
             age = current_time - last_modified
             if age > timedelta(days=days_threshold):
@@ -47,7 +49,7 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
                     s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version_id)
                     print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False")
                 except Exception as err:
-                    print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False Error: {err}")
+                    print(f"Could Not Delete: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False Error: {err}")
     
     for page in paginator.paginate(**list_params):  
         for version in versions.get('DeleteMarkers', []):
@@ -55,6 +57,9 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, days_threshold:in
             version_id = version['VersionId']
             last_modified = version['LastModified'].replace(tzinfo=timezone.utc)
             age = current_time - last_modified
+
+            if not key.startswith(prefix):
+                continue
             
             if age > timedelta(days=days_threshold):
                 try:
@@ -82,6 +87,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--bucket', help='s3 bucket', required=True)
+    parser.add_argument('-p', '--prefix', help='prefix', required=False, default='')
     parser.add_argument('-e', '--endpoint', help='s3 endpoint url', required=True)
     parser.add_argument('-d', '--days', help='delete objects version older than', required=True, type=int)
     args = parser.parse_args()
@@ -89,9 +95,10 @@ def main():
     bucket_name = args.bucket 
     days_threshold = args.days
     endpoint = args.endpoint
+    prefix = args.prefix
 
     try:
-        delete_non_current_versions(endpoint=endpoint, bucket_name=bucket_name, days_threshold=days_threshold)
+        delete_non_current_versions(endpoint=endpoint, bucket_name=bucket_name, prefix=prefix, days_threshold=days_threshold)
     except Exception as err:
         print(f"Error: {err}")    
 
