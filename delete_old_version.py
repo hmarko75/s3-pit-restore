@@ -7,7 +7,7 @@ import argparse
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def delete_non_current_versions(endpoint:str, bucket_name:str, prefix:str='', days_threshold:int=30):
+def delete_non_current_versions(endpoint:str, bucket_name:str, prefix:str='', days_threshold:int=30, simulate:bool=False):
    
     current_time = datetime.now(timezone.utc)
     skipped = list()
@@ -23,6 +23,7 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, prefix:str='', da
             key = version['Key']
             version_id = version['VersionId']
             is_latest = version['IsLatest']
+            size = version['Size']
             last_modified = version['LastModified'].replace(tzinfo=timezone.utc)
 
             # Skip the current version as we only want to delete non-current versions
@@ -46,8 +47,9 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, prefix:str='', da
                             skipped.append(key)
                             continue
                 try:
-                    s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version_id)
-                    print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False")
+                    if not simulate:
+                        s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version_id)
+                    print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Size: {size} Modified Time: {last_modified} Delete Marker: False")
                 except Exception as err:
                     print(f"Could Not Delete: s3://{bucket_name}/{key} (Version ID: {version['VersionId']}) Modified Time: {last_modified} Delete Marker: False Error: {err}")
     
@@ -77,7 +79,8 @@ def delete_non_current_versions(endpoint:str, bucket_name:str, prefix:str='', da
                 if key in skipped:
                     continue
                 try:
-                    s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version['VersionId'])
+                    if not simulate:
+                        s3client.delete_object(Bucket=bucket_name, Key=key, VersionId=version['VersionId'])
                     print(f"Deleted: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True")
                 except Exception as err:
                     print(f"Failed to delete: s3://{bucket_name}/{key} (Version ID: {version_id}) Modified Time: {last_modified} Delete Marker: True Error: {err}")
@@ -90,15 +93,17 @@ def main():
     parser.add_argument('-p', '--prefix', help='prefix', required=False, default='')
     parser.add_argument('-e', '--endpoint', help='s3 endpoint url', required=True)
     parser.add_argument('-d', '--days', help='delete objects version older than', required=True, type=int)
+    parser.add_argument('-s', '--simulate', help='simulate only', required=False, default=False,action='store_true')
     args = parser.parse_args()
     
     bucket_name = args.bucket 
     days_threshold = args.days
     endpoint = args.endpoint
     prefix = args.prefix
+    simulate = args.simulate
 
     try:
-        delete_non_current_versions(endpoint=endpoint, bucket_name=bucket_name, prefix=prefix, days_threshold=days_threshold)
+        delete_non_current_versions(endpoint=endpoint, bucket_name=bucket_name, prefix=prefix, days_threshold=days_threshold, simulate=simulate)
     except Exception as err:
         print(f"Error: {err}")    
 
